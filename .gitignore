@@ -1,0 +1,39 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+venv/
+.env
+.venv/
+
+# Data and models (don't upload large data or trained models)
+data/raw/
+data/processed/
+models/
+*.pkl
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Python packaging
+dist/
+build/
+*.egg-info/
+
+# Others
+pip-log.txt
+
