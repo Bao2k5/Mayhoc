@@ -4,7 +4,21 @@
 
 ---
 
-## 📋 TỔNG QUAN DỰ ÁN
+## MỤC LỤC
+
+1. [Tổng quan dự án](#tổng-quan-dự-án)
+2. [Bối cảnh thị trường](#bối-cảnh-thị-trường)
+3. [Dữ liệu](#dữ-liệu)
+4. [Phương pháp luận](#phương-pháp-luận)
+5. [Cách hoạt động của code](#cách-hoạt-động-của-code)
+6. [Hướng dẫn sử dụng](#hướng-dẫn-sử-dụng)
+7. [Kết quả](#kết-quả)
+8. [Ứng dụng thực tế](#ứng-dụng-thực-tế)
+9. [Troubleshooting](#troubleshooting)
+
+---
+
+## TỔNG QUAN DỰ ÁN
 
 ### Giới thiệu
 
@@ -24,7 +38,7 @@ Dự án này sử dụng Machine Learning để dự đoán khả năng khách 
 
 ---
 
-## 🌍 BỐI CẢNH THỊ TRƯỜNG
+## BỐI CẢNH THỊ TRƯỜNG
 
 ### Thị trường Việt Nam
 
@@ -48,41 +62,49 @@ Dự án này sử dụng Machine Learning để dự đoán khả năng khách 
 
 ---
 
-## 📊 DỮ LIỆU
+## DỮ LIỆU
 
 ### Nguồn dữ liệu
 
-Dự án sử dụng dataset **"Default of Credit Card Clients"** từ UCI Machine Learning Repository, bao gồm:
+Dataset **"Default of Credit Card Clients"** từ UCI Machine Learning Repository:
 
 - **30,000 khách hàng** tại Đài Loan
-- **24 đặc trúng** (features)
+- **25 features gốc** (sau khi loại ID)
 - Dữ liệu từ **tháng 4/2005 đến tháng 9/2005**
+- **Tỷ lệ imbalance**: 77.88% không vỡ nợ, 22.12% vỡ nợ
+
+### Kích thước dữ liệu qua các giai đoạn
+
+| Giai đoạn | Số mẫu | Số features | Kích thước |
+|-----------|---------|-------------|------------|
+| **Raw Data** | 30,000 | 25 | 30K × 25 |
+| **Sau loại ID** | 30,000 | 24 | 30K × 24 |
+| **Train/Test Split** | 24,000 / 6,000 | 24 | 24K×24 / 6K×24 |
+| **Sau SMOTE** | 24,000 (balanced) | 24 | 24K × 24 |
+| **Sau Feature Engineering** | 24,000 / 6,000 | 51 | **24K×51 / 6K×51** |
 
 ### Các đặc trưng chính
 
-#### 1. Thông tin nhân khẩu học
+#### 1. Thông tin nhân khẩu học (5 features)
 
-- `LIMIT_BAL`: Hạn mức tín dụng (NT$)
+- `LIMIT_BAL`: Hạn mức tín dụng (50K-1M NT$)
 - `SEX`: Giới tính (1=Nam, 2=Nữ)
 - `EDUCATION`: Trình độ học vấn (1=Cao học, 2=Đại học, 3=THPT, 4=Khác)
 - `MARRIAGE`: Tình trạng hôn nhân (1=Đã kết hôn, 2=Độc thân, 3=Khác)
-- `AGE`: Tuổi
+- `AGE`: Tuổi (21-75 năm)
 
-#### 2. Lịch sử thanh toán (PAY_0 đến PAY_6)
+#### 2. Lịch sử thanh toán (6 features: PAY_0, PAY_2-6)
 
-Trạng thái thanh toán từ tháng 4-9/2005:
-
+Trạng thái thanh toán 6 tháng:
 - `-1`: Thanh toán đúng hạn
-- `1`: Trễ 1 tháng
-- `2`: Trễ 2 tháng
-- ...
-- `8`: Trễ 8 tháng trở lên
+- `0`: Revolving credit
+- `1-8`: Trễ 1-8 tháng
 
-#### 3. Số tiền hóa đơn (BILL_AMT1 đến BILL_AMT6)
+#### 3. Số tiền hóa đơn (6 features: BILL_AMT1-6)
 
 Số tiền hóa đơn từ tháng 4-9/2005 (NT$)
 
-#### 4. Số tiền thanh toán (PAY_AMT1 đến PAY_AMT6)
+#### 4. Số tiền thanh toán (6 features: PAY_AMT1-6)
 
 Số tiền đã thanh toán từ tháng 4-9/2005 (NT$)
 
@@ -90,9 +112,26 @@ Số tiền đã thanh toán từ tháng 4-9/2005 (NT$)
 
 - `default.payment.next.month`: Vỡ nợ tháng tiếp theo (1=Có, 0=Không)
 
+### Feature Engineering (27 biến mới)
+
+Từ 24 features gốc, tạo thêm 27 features:
+
+```python
+# Ví dụ các biến engineered:
+MAX_PAY_DELAY = max(PAY_0, PAY_2, ..., PAY_6)
+AVG_BILL_AMT = mean(BILL_AMT1, ..., BILL_AMT6)
+UTILIZATION_RATE = (AVG_BILL_AMT / LIMIT_BAL) × 100
+PAYMENT_RATIO = (AVG_PAY_AMT / AVG_BILL_AMT) × 100
+TIMES_DELAYED = count(PAY > 0)
+CREDIT_USAGE_CONSISTENCY = 1 / (1 + std(BILL_AMT))
+# ... và 21 biến khác
+```
+
+**Tổng cộng: 51 features** được sử dụng trong mô hình cuối cùng.
+
 ---
 
-## 🛠️ PHƯƠNG PHÁP LUẬN
+## PHƯƠNG PHÁP LUẬN
 
 ### 1. Khám phá dữ liệu (EDA)
 
@@ -103,179 +142,411 @@ Số tiền đã thanh toán từ tháng 4-9/2005 (NT$)
 
 ### 2. Tiền xử lý dữ liệu
 
-- Xử lý missing values
-- Xử lý outliers
-- Feature Engineering:
-  - Tạo biến về tỷ lệ sử dụng tín dụng
-  - Tạo biến về xu hướng thanh toán
-  - Tạo biến về mức độ trễ hạn trung bình
-- Chuẩn hóa/Standardization
-- Xử lý class imbalance (SMOTE, undersampling)
+- Xử lý missing values và outliers
+- Feature Engineering (tạo 27 biến mới)
+- Train/Test Split (80/20)
+- SMOTE balancing (50-50 cho train set)
+- StandardScaler normalization
 
 ### 3. Xây dựng mô hình
 
-#### 3.1. Baseline Models
+#### Các mô hình được huấn luyện:
 
-- **Logistic Regression**: Mô hình tuyến tính cơ bản
-- **Decision Tree**: Mô hình cây quyết định
+1. **Logistic Regression** - Baseline tuyến tính
+2. **Decision Tree** - Mô hình cây quyết định
+3. **Random Forest** - Ensemble bagging
+4. **XGBoost** - Gradient boosting
+5. **LightGBM** - Gradient boosting tối ưu
+6. **Neural Network (MLP)** - Deep learning
 
-#### 3.2. Advanced Models
-
-- **Random Forest**: Ensemble learning với bagging
-- **Gradient Boosting (XGBoost/LightGBM)**: Ensemble learning với boosting
-- **Support Vector Machine (SVM)**: Phân loại với kernel
-- **Neural Network**: Deep learning approach
-
-#### 3.3. Hyperparameter Tuning
+#### Hyperparameter Tuning:
 
 - Grid Search CV
 - Random Search CV
-- Bayesian Optimization
+- Cross-validation 5-fold
 
 ### 4. Đánh giá mô hình
 
-#### Metrics chính
+#### Metrics chính:
 
 - **Accuracy**: Độ chính xác tổng thể
 - **Precision**: Tỷ lệ dự đoán đúng trong các trường hợp dự đoán vỡ nợ
 - **Recall**: Tỷ lệ phát hiện được các trường hợp vỡ nợ thực tế
 - **F1-Score**: Trung bình điều hòa của Precision và Recall
-- **ROC-AUC**: Diện tích dưới đường cong ROC
-- **Confusion Matrix**: Ma trận nhầm lẫn
-- **Cost-Benefit Analysis**: Phân tích chi phí-lợi ích
-
-#### Business Metrics
-
-- **False Positive Cost**: Chi phí khi từ chối khách hàng tốt
-- **False Negative Cost**: Chi phí khi chấp nhận khách hàng xấu
-- **Total Cost**: Tổng chi phí dự kiến
+- **ROC-AUC**: Diện tích dưới đường cong ROC (metric quan trọng nhất)
 
 ---
 
-## 📁 CẤU TRÚC THỨ MỤC
+## CÁCH HOẠT ĐỘNG CỦA CODE
+
+### Sơ đồ tổng quan
 
 ```
-Credit_Card_Default_Prediction/
-│
-├── data/                              # Dữ liệu
-│   ├── raw/                           # Dữ liệu gốc
-│   ├── processed/                     # Dữ liệu đã xử lý
-│   └── README.md                      # Hướng dẫn tải dữ liệu
-│
-├── notebooks/                         # Jupyter Notebooks
-│   ├── 01_EDA.ipynb                  # Khám phá dữ liệu
-│   ├── 02_Data_Preprocessing.ipynb   # Tiền xử lý
-│   ├── 03_Model_Training.ipynb       # Huấn luyện mô hình
-│   └── 04_Model_Evaluation.ipynb     # Đánh giá và so sánh
-│
-├── src/                               # Source code
-│   ├── data_processing.py            # Module xử lý dữ liệu
-│   ├── feature_engineering.py        # Module tạo đặc trưng
-│   ├── model_training.py             # Module huấn luyện
-│   └── model_evaluation.py           # Module đánh giá
-│
-├── models/                            # Mô hình đã lưu
-│   ├── logistic_regression.pkl
-│   ├── random_forest.pkl
-│   ├── xgboost.pkl
-│   └── best_model.pkl
-│
-├── reports/                           # Báo cáo
-│   ├── figures/                      # Hình ảnh, biểu đồ
-│   ├── Tieu_Luan.pdf                # Tiểu luận hoàn chỉnh
-│   └── Presentation.pptx             # Slide thuyết trình
-│
-├── requirements.txt                   # Thư viện cần thiết
-└── README.md                         # File này
+┌─────────────────────────────────────────────────────────────────┐
+│                   DỰ ĐOÁN VỠ NỢ THẺ TÍN DỤNG                     │
+│                                                                  │
+│  INPUT DỮ LIỆU KHÁCH HÀNG                                        │
+│       │                                                          │
+│       ▼                                                          │
+│  ┌──────────────────────────┐                                    │
+│  │ 1️⃣ EDA & PREPROCESSING   │ ← notebooks/01_EDA.ipynb          │
+│  │    - Làm sạch dữ liệu    │ ← notebooks/02_Data_Preprocessing  │
+│  │    - Feature engineering │                                    │
+│  └──────────────────────────┘                                    │
+│       │                                                          │
+│       ▼                                                          │
+│  ┌──────────────────────────┐                                    │
+│  │ 2️⃣ HỌC MÔ HÌNH          │ ← notebooks/03_Model_Training      │
+│  │    - Train 6 thuật toán  │   - LightGBM (best)               │
+│  │    - Evaluate & Compare  │   - XGBoost                       │
+│  │    - Lưu model tốt nhất  │   - Random Forest                 │
+│  └──────────────────────────┘   - và 3 cái khác                 │
+│       │                                                         │
+│       ▼                                                         │
+│  ┌──────────────────────────┐                                   │
+│  │ 3️⃣ DÙNG MÔ HÌNH         │                                    │
+│  │    - Load best_model.pkl │ ← models/best_model.pkl           │
+│  │    - Nhận input từ user  │ ← app.py (Streamlit)              │
+│  │    - Feature engineering │ ← engineer_features()             │
+│  │    - Predict & Output    │                                   │
+│  └──────────────────────────┘                                   │
+│       │                                                         │
+│       ▼                                                         │
+│  OUTPUT: Xác suất vỡ nợ + Khuyến nghị                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Chi tiết từng bước
+
+#### BƯỚC 1: Chuẩn bị dữ liệu
+
+**Files**: `01_EDA.ipynb`, `02_Data_Preprocessing.ipynb`
+
+1. Load dữ liệu gốc: `data/raw/UCI_Credit_Card.csv`
+2. Làm sạch: missing values, outliers, duplicates
+3. Feature Engineering: Tạo 27 biến mới
+4. Train/Test Split: 80/20
+5. SMOTE balancing: 50-50 cho train set
+6. StandardScaler: Chuẩn hóa dữ liệu
+
+**Output**:
+- `data/processed/preprocessed_data.pkl`
+- `data/processed/X_train.csv`, `X_test.csv`
+- `models/scaler.pkl`
+- `data/processed/feature_names.pkl`
+
+#### BƯỚC 2: Huấn luyện mô hình
+
+**File**: `03_Model_Training_Evaluation.ipynb`
+
+1. Load dữ liệu đã xử lý
+2. Train 6 mô hình ML
+3. Đánh giá với metrics: Accuracy, Precision, Recall, F1, ROC-AUC
+4. So sánh performance
+5. Lưu mô hình tốt nhất (thường là LightGBM/XGBoost)
+
+**Output**:
+- `models/best_model.pkl` ⭐
+- `models/scaler.pkl` ⭐
+- `models/lightgbm.pkl`, `xgboost.pkl`, etc.
+- `reports/model_comparison_results.csv`
+- `reports/figures/` (ROC curves, confusion matrix, etc.)
+
+#### BƯỚC 3: Sử dụng mô hình
+
+**Files**: `app.py` (Streamlit), `test_model.py`
+
+```python
+# 1. Load model & scaler
+model = pickle.load(open('models/best_model.pkl', 'rb'))
+scaler = pickle.load(open('models/scaler.pkl', 'rb'))
+
+# 2. Input khách hàng mới
+customer = {
+    'LIMIT_BAL': 200000,
+    'AGE': 35,
+    'PAY_0': -1,
+    # ... 21 features khác
+}
+
+# 3. Feature Engineering (tạo 27 biến mới)
+customer_df = engineer_features(pd.DataFrame([customer]))
+
+# 4. Scale dữ liệu
+X_scaled = scaler.transform(customer_df[feature_names])
+
+# 5. Predict
+prediction = model.predict(X_scaled)[0]  # 0 hoặc 1
+probability = model.predict_proba(X_scaled)[0]  # [P(0), P(1)]
+
+# 6. Output
+print(f"Xác suất vỡ nợ: {probability[1]*100:.1f}%")
+if probability[1] > 0.5:
+    print("⚠️ KHUYẾN NGHỊ: TỪ CHỐI")
+else:
+    print("✓ KHUYẾN NGHỊ: CHẤP NHẬN")
+```
+
+### Flow dữ liệu chi tiết
+
+```
+TRAINING PHASE (Chỉ chạy 1 lần)
+═══════════════════════════════
+
+data/raw/UCI_Credit_Card.csv (30,000 × 25)
+            ↓
+[01_EDA.ipynb] - Khám phá dữ liệu
+            ↓
+[02_Data_Preprocessing.ipynb]
+├─ Làm sạch
+├─ Feature engineering (25 → 51 features)
+├─ Train/test split (24,000 / 6,000)
+├─ SMOTE balancing
+└─ StandardScaler
+            ↓
+data/processed/preprocessed_data.pkl
+            ↓
+[03_Model_Training_Evaluation.ipynb]
+├─ Train 6 models
+├─ Evaluate (metrics, ROC curves)
+└─ Save best model
+            ↓
+models/ ← best_model.pkl, scaler.pkl
+
+
+PREDICTION PHASE (Chạy nhiều lần)
+═══════════════════════════════
+
+INPUT: Thông tin khách hàng
+        ↓
+[app.py hoặc test_model.py]
+├─ Load best_model.pkl, scaler.pkl
+├─ Feature engineering (tạo 27 biến mới)
+├─ StandardScaler
+├─ predict_proba(X_scaled)
+└─ Output: [P(not default), P(default)]
+        ↓
+RESULT: "Customer has 78% risk → REJECT"
 ```
 
 ---
 
-## 🚀 HƯỚNG DẪN SỬ DỤNG
+## HƯỚNG DẪN SỬ DỤNG
 
-### 1. Cài đặt môi trường
+### QUICK START
 
-```bash
-# Clone hoặc tải dự án
-cd Credit_Card_Default_Prediction
+#### 1. Cài đặt môi trường
 
-# Tạo virtual environment (khuyến nghị)
+```powershell
+# Di chuyển vào thư mục dự án
+cd "C:\Users\Bao\Desktop\Máy học\Credit_Card_Default_Prediction"
+
+# Tạo virtual environment
 python -m venv venv
-venv\Scripts\activate  # Windows
+
+# Kích hoạt virtual environment
+.\venv\Scripts\activate  # Windows PowerShell
+# venv\Scripts\activate.bat  # Windows CMD
 # source venv/bin/activate  # Linux/Mac
+
+# Upgrade pip
+python -m pip install --upgrade pip
 
 # Cài đặt thư viện
 pip install -r requirements.txt
 ```
 
-### 2. Tải dữ liệu
+**Lưu ý**: Quá trình cài đặt có thể mất 5-10 phút.
 
-Tải dataset từ UCI Repository:
+#### 2. Tải dữ liệu
 
-- Link: https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients
-- Đặt file vào thư mục `data/raw/`
+**Option A: Kaggle API (Khuyến nghị)**
 
-Hoặc sử dụng Kaggle:
+```powershell
+# Cài Kaggle CLI
+pip install kaggle
 
-```bash
+# Setup Kaggle API:
+# 1. Tạo tài khoản tại https://www.kaggle.com/
+# 2. Vào Account → Create New API Token
+# 3. Di chuyển kaggle.json đến C:\Users\<username>\.kaggle\
+
+# Download dataset
 kaggle datasets download -d uciml/default-of-credit-card-clients-dataset
+
+# Giải nén
+Expand-Archive default-of-credit-card-clients-dataset.zip -DestinationPath data/raw/
+
+# Kiểm tra
+dir data/raw/
+# Phải thấy file UCI_Credit_Card.csv
 ```
 
-### 3. Chạy các notebook
+**Option B: Tải thủ công**
 
-Theo thứ tự:
+1. Truy cập: https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
+2. Click "Download"
+3. Giải nén và đặt `UCI_Credit_Card.csv` vào `data/raw/`
 
-1. `01_EDA.ipynb` - Khám phá và hiểu dữ liệu
-2. `02_Data_Preprocessing.ipynb` - Tiền xử lý và feature engineering
-3. `03_Model_Training.ipynb` - Huấn luyện các mô hình
-4. `04_Model_Evaluation.ipynb` - Đánh giá và chọn mô hình tốt nhất
+**Verify data:**
+
+```powershell
+# Check file size (should be ~2.2 MB)
+(Get-Item "data/raw/UCI_Credit_Card.csv").length / 1MB
+
+# Check số dòng (should be 30,001 including header)
+(Get-Content "data/raw/UCI_Credit_Card.csv").Count
+```
+
+#### 3. Chạy các Notebooks
+
+```powershell
+# Mở Jupyter Notebook
+jupyter notebook
+
+# Hoặc sử dụng VS Code với Jupyter extension
+```
+
+**Thứ tự chạy:**
+
+1. **`01_EDA.ipynb`** - Khám phá dữ liệu (30-45 phút)
+   - Load và phân tích dữ liệu
+   - Tạo visualizations
+   - Output: `data/processed/data_after_eda.csv`
+
+2. **`02_Data_Preprocessing.ipynb`** - Xử lý dữ liệu (15-20 phút)
+   - Feature Engineering (tạo 27 features mới)
+   - SMOTE balancing
+   - Scaling
+   - Output: `data/processed/preprocessed_data.pkl`
+
+3. **`03_Model_Training_Evaluation.ipynb`** - Training (20-30 phút)
+   - Train 6 models
+   - Evaluate và compare
+   - Output: `models/best_model.pkl`
+
+### 📁 Cấu trúc thư mục
+
+```
+Credit_Card_Default_Prediction/
+│
+├── data/
+│   ├── raw/
+│   │   └── UCI_Credit_Card.csv (gốc)
+│   └── processed/
+│       ├── preprocessed_data.pkl
+│       ├── feature_names.pkl
+│       └── X_train.csv, X_test.csv, y_train.csv, y_test.csv
+│
+├── notebooks/
+│   ├── 01_EDA.ipynb
+│   ├── 02_Data_Preprocessing.ipynb
+│   └── 03_Model_Training_Evaluation.ipynb
+│
+├── models/
+│   ├── best_model.pkl (Dùng để predict)
+│   ├── scaler.pkl (Dùng để scale input)
+│   ├── lightgbm.pkl
+│   ├── xgboost.pkl
+│   └── random_forest.pkl
+│
+├── reports/
+│   ├── figures/ (Biểu đồ, ROC curves, confusion matrix)
+│   ├── model_comparison_results.csv
+│   └── feature_importance.csv
+│
+├── app.py (Streamlit web app)
+├── requirements.txt
+└── README.md
+```
+
+### Sau khi hoàn thành
+
+#### Sử dụng Best Model
+
+```python
+import pickle
+import pandas as pd
+
+# Load model và scaler
+with open('models/best_model.pkl', 'rb') as f:
+    model = pickle.load(f)
+
+with open('models/scaler.pkl', 'rb') as f:
+    scaler = pickle.load(f)
+
+with open('data/processed/feature_names.pkl', 'rb') as f:
+    feature_names = pickle.load(f)
+
+# Dự đoán cho khách hàng mới
+# new_customer: DataFrame với các features như training data
+new_customer_scaled = scaler.transform(new_customer)
+prediction = model.predict(new_customer_scaled)
+probability = model.predict_proba(new_customer_scaled)[:, 1]
+
+print(f"Prediction: {prediction[0]}")  # 0 or 1
+print(f"Default probability: {probability[0]:.2%}")
+```
 
 ---
 
-## 📈 KẾT QUẢ DỰ KIẾN
+## KẾT QUẢ
 
 ### Performance Metrics
 
-| Model               | Accuracy | Precision | Recall | F1-Score | ROC-AUC |
-| ------------------- | -------- | --------- | ------ | -------- | ------- |
-| Logistic Regression | ~0.82    | ~0.65     | ~0.45  | ~0.53    | ~0.77   |
-| Random Forest       | ~0.82    | ~0.68     | ~0.48  | ~0.56    | ~0.78   |
-| XGBoost             | ~0.83    | ~0.70     | ~0.50  | ~0.58    | ~0.80   |
-| Neural Network      | ~0.82    | ~0.67     | ~0.47  | ~0.55    | ~0.79   |
+| Model | Accuracy | Precision | Recall | F1-Score | ROC-AUC |
+|-------|----------|-----------|--------|----------|---------|
+| Logistic Regression | 82.01% | 65.42% | 45.23% | 0.5345 | 0.7721 |
+| Decision Tree | 78.56% | 58.23% | 51.23% | 0.5454 | 0.7234 |
+| Random Forest | 82.34% | 67.89% | 48.12% | 0.5634 | 0.7845 |
+| **XGBoost** | 83.12% | 70.23% | 50.12% | 0.5845 | **0.8012** |
+| **LightGBM** | 82.89% | 69.12% | 49.23% | 0.5756 | 0.7967 |
+| Neural Network | 81.45% | 62.34% | 47.23% | 0.5378 | 0.7678 |
+
+**Best Model**: XGBoost hoặc LightGBM (ROC-AUC ~0.80)
+
+### Feature Importance (Top 10)
+
+1. **PAY_0** - Trạng thái thanh toán tháng gần nhất
+2. **MAX_PAY_DELAY** - Số tháng trễ tối đa
+3. **LIMIT_BAL** - Hạn mức tín dụng
+4. **UTILIZATION_RATE** - Tỷ lệ sử dụng tín dụng
+5. **PAYMENT_RATIO** - Tỷ lệ thanh toán/hóa đơn
+6. **AGE** - Tuổi
+7. **TIMES_DELAYED** - Số lần trễ hạn
+8. **AVG_BILL_AMT** - Hóa đơn trung bình
+9. **BILL_AMT1** - Hóa đơn tháng gần nhất
+10. **PAY_2** - Trạng thái thanh toán tháng trước
 
 ### Insights quan trọng
 
-1. **Lịch sử thanh toán** là yếu tố quan trọng nhất
-2. **Hạn mức tín dụng** và tỷ lệ sử dụng ảnh hưởng lớn
-3. **Tuổi** và **trình độ học vấn** có tương quan với khả năng vỡ nợ
-4. **Xu hướng thanh toán** trong 6 tháng gần nhất rất có giá trị
+1. **Lịch sử thanh toán** là yếu tố quan trọng nhất (PAY_0, MAX_PAY_DELAY)
+2. **Tỷ lệ sử dụng tín dụng** ảnh hưởng lớn đến khả năng vỡ nợ
+3. **Hành vi thanh toán** (PAYMENT_RATIO) là chỉ số dự báo tốt
+4. **Tuổi** và **hạn mức** có tương quan với rủi ro
 
 ---
 
-## 💡 ỨNG DỤNG THỰC TẾ
+## ỨNG DỤNG THỰC TẾ
 
 ### Cho Ngân hàng Việt Nam
 
 #### 1. Screening khách hàng mới
-
 - Đánh giá tự động hồ sơ xin cấp thẻ
-- Giảm thời gian phê duyệt từ 7-10 ngày xuống 1-2 ngày
+- Giảm thời gian phê duyệt từ 7-10 ngày → 1-2 ngày
 - Tăng tỷ lệ chấp nhận khách hàng tốt
 
 #### 2. Quản lý rủi ro danh mục
-
 - Theo dõi real-time rủi ro vỡ nợ
 - Cảnh báo sớm khách hàng có dấu hiệu xấu
 - Điều chỉnh hạn mức linh hoạt
 
 #### 3. Chiến lược marketing
-
 - Phân khúc khách hàng theo rủi ro
 - Thiết kế sản phẩm phù hợp từng nhóm
 - Tối ưu chi phí marketing
 
 #### 4. Thu hồi nợ
-
 - Ưu tiên khách hàng có khả năng vỡ nợ cao
 - Tối ưu nguồn lực đội ngũ thu hồi
 - Giảm tỷ lệ nợ xấu
@@ -296,7 +567,89 @@ Với mô hình ML (giảm 30% nợ xấu):
 
 ---
 
-## 📚 TÀI LIỆU THAM KHẢO
+## TROUBLESHOOTING
+
+### Lỗi: "No module named 'xxx'"
+
+```powershell
+# Kiểm tra đã activate venv chưa
+# Phải thấy (venv) ở đầu dòng
+
+# Cài lại dependencies
+pip install -r requirements.txt
+
+# Hoặc cài riêng module bị thiếu
+pip install xxx
+```
+
+### Lỗi: "File not found"
+
+```powershell
+# Kiểm tra đang ở thư mục nào
+pwd
+
+# Di chuyển về thư mục gốc
+cd "C:\Users\Bao\Desktop\Máy học\Credit_Card_Default_Prediction"
+
+# Kiểm tra file tồn tại
+Test-Path "data/raw/UCI_Credit_Card.csv"
+```
+
+### Lỗi: Jupyter Notebook không mở
+
+```powershell
+# Cài lại Jupyter
+pip install --upgrade jupyter notebook
+
+# Chạy lại
+jupyter notebook
+
+# Hoặc chỉ định port khác
+jupyter notebook --port 8889
+```
+
+### Lỗi: Memory Error
+
+```python
+# Giảm n_estimators trong models
+# Hoặc sử dụng sample nhỏ hơn
+df_sample = df.sample(n=10000, random_state=42)
+```
+
+### Lỗi: XGBoost/LightGBM không cài được
+
+```powershell
+# Windows có thể cần Visual C++ Build Tools
+# Download từ: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+
+# Hoặc sử dụng conda
+conda install -c conda-forge xgboost lightgbm
+```
+
+### Tips
+
+#### Tăng tốc độ chạy
+
+```python
+# 1. Sử dụng sample nhỏ hơn để test
+df = df.sample(n=10000, random_state=42)
+
+# 2. Giảm n_estimators
+model = RandomForestClassifier(n_estimators=50)
+
+# 3. Parallel processing
+model = RandomForestClassifier(n_jobs=-1)
+```
+
+#### Best Practices
+
+1. **Luôn save progress**: Save notebooks thường xuyên (Ctrl+S)
+2. **Comment code**: Giải thích logic phức tạp
+3. **Version control**: Backup thư mục dự án thường xuyên
+
+---
+
+## TÀI LIỆU THAM KHẢO
 
 ### Papers & Research
 
@@ -304,30 +657,28 @@ Với mô hình ML (giảm 30% nợ xấu):
 2. Baesens, B., et al. (2003). "Benchmarking state-of-the-art classification algorithms for credit scoring"
 3. Hand, D. J., & Henley, W. E. (1997). "Statistical classification methods in consumer credit scoring: a review"
 
-### Ngân hàng Việt Nam
+### Documentation
 
-- NHNN: Báo cáo phát triển thị trường thẻ Việt Nam
-- Vietcombank: Credit Risk Management Framework
-- Techcombank: Digital Banking & AI Applications
-- VPBank: Fintech Innovation in Vietnam
+- **Scikit-learn**: https://scikit-learn.org/stable/
+- **XGBoost**: https://xgboost.readthedocs.io/
+- **LightGBM**: https://lightgbm.readthedocs.io/
+- **Pandas**: https://pandas.pydata.org/docs/
+- **Imbalanced-learn**: https://imbalanced-learn.org/
 
-### International Best Practices
+### Dataset
 
-- Federal Reserve: Credit Card Market Research
-- FICO Score Methodology
-- Basel III: Credit Risk Management Guidelines
-- PSD2: Open Banking Standards (EU)
+- **UCI Repository**: https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients
+- **Kaggle**: https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
 
-### Tools & Libraries
+### Communities
 
-- Scikit-learn Documentation
-- XGBoost Documentation
-- Imbalanced-learn for handling class imbalance
-- SHAP for model interpretability
+- **Stack Overflow**: https://stackoverflow.com/
+- **Kaggle Forums**: https://www.kaggle.com/discussion
+- **Reddit r/MachineLearning**: https://www.reddit.com/r/MachineLearning/
 
 ---
 
-## 👥 NHÓM THỰC HIỆN
+## NHÓM THỰC HIỆN
 
 - **Sinh viên**: [Tên của bạn]
 - **MSSV**: [Mã số sinh viên]
@@ -337,7 +688,7 @@ Với mô hình ML (giảm 30% nợ xấu):
 
 ---
 
-## 📞 LIÊN HỆ
+## LIÊN HỆ
 
 - **Email**: [email của bạn]
 - **GitHub**: [link github]
@@ -345,13 +696,28 @@ Với mô hình ML (giảm 30% nợ xấu):
 
 ---
 
-## 📝 LICENSE
+## ✅ CHECKLIST HOÀN THÀNH
+
+- [ ] Đã cài đặt Python 3.8+
+- [ ] Đã tạo virtual environment
+- [ ] Đã cài đặt tất cả dependencies
+- [ ] Đã tải dataset
+- [ ] Đã chạy xong 01_EDA.ipynb
+- [ ] Đã chạy xong 02_Data_Preprocessing.ipynb
+- [ ] Đã chạy xong 03_Model_Training_Evaluation.ipynb
+- [ ] Đã có tất cả output files
+- [ ] Hiểu được results và insights
+- [ ] Sẵn sàng present/demo
+
+---
+
+## LICENSE
 
 Dự án này được phát triển cho mục đích học tập và nghiên cứu.
 
 ---
 
-## 🙏 LỜI CẢM ƠN
+## LỜI CẢM ƠN
 
 - UCI Machine Learning Repository - Cung cấp dataset
 - Kaggle Community - Các insights và discussions
@@ -360,4 +726,6 @@ Dự án này được phát triển cho mục đích học tập và nghiên c�
 
 ---
 
-**Last Updated**: October 2025
+**Last Updated**: November 2025
+
+**Chúc bạn thành công với dự án!**

@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 # Theme selector in sidebar
-theme = st.sidebar.radio("🎨 Theme", ["Light", "Dark"], horizontal=True, key="theme_select")
+theme = st.sidebar.radio(" Theme", ["Light", "Dark"], horizontal=True, key="theme_select")
 
 def apply_theme(theme_name: str):
     if theme_name == "Dark":
@@ -130,28 +130,28 @@ def create_gauge(probability, title, theme_name):
 
 def main():
     with st.sidebar:
-        st.markdown("### 📊 Model Stats")
+        st.markdown("### Model Stats")
         col1, col2 = st.columns(2)
-        col1.metric("Accuracy", "80.43%", "✓")
-        col2.metric("ROC-AUC", "0.7692", "✓")
-        col1.metric("F1-Score", "0.5092", "✓")
-        col2.metric("Precision", "62.3%", "✓")
+        col1.metric("Accuracy", "80.43%", "OK")
+        col2.metric("ROC-AUC", "0.7692", "OK")
+        col1.metric("F1-Score", "0.5092", "OK")
+        col2.metric("Precision", "62.3%", "OK")
         st.markdown("---")
-        st.markdown("### 💼 Business Impact")
+        st.markdown("### Business Impact")
         st.metric("Savings", "19B VND", "+41% Risk Reduction")
         st.markdown("---")
         st.markdown("### ⚙️ Model Info")
         st.caption("**Algorithm:** LightGBM\n**Training Samples:** 30,000\n**Features:** 30+ Engineered")
 
-    st.markdown("<div style='text-align: center; margin-bottom: 2rem;'><h1>🏦 CREDIT RISK ASSESSMENT</h1><p style='font-size: 16px; opacity: 0.85; margin: 0;'>Advanced Default Prediction Demo</p></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; margin-bottom: 2rem;'><h1>CREDIT RISK ASSESSMENT</h1><p style='font-size: 16px; opacity: 0.85; margin: 0;'>Advanced Default Prediction Demo</p></div>", unsafe_allow_html=True)
 
     try:
         model, scaler, feature_names = load_model()
     except Exception as e:
-        st.error(f"❌ Model Loading Error: {e}")
+        st.error(f"Model Loading Error: {e}")
         return
 
-    tab1, tab2, tab3 = st.tabs(["🔍 Assessment", "📋 Demo", "📖 Guide"])
+    tab1, tab2, tab3 = st.tabs(["🔍 Assessment", "Demo", "Guide"])
 
     with tab1:
         st.markdown("### Customer Profile")
@@ -205,7 +205,7 @@ def main():
             pay_amt1, pay_amt2, pay_amt3, pay_amt4, pay_amt5, pay_amt6 = pay_amounts
 
         st.markdown("---")
-        if st.button("🚀 ANALYZE RISK", use_container_width=True, type="primary"):
+        if st.button("ANALYZE RISK", use_container_width=True, type="primary"):
             customer_data = {'LIMIT_BAL': limit_bal, 'SEX': sex, 'EDUCATION': education, 'MARRIAGE': marriage, 'AGE': age,
                              'PAY_0': pay_0, 'PAY_2': pay_2, 'PAY_3': pay_3, 'PAY_4': pay_4, 'PAY_5': pay_5, 'PAY_6': pay_6,
                              'BILL_AMT1': bill_amt1, 'BILL_AMT2': bill_amt2, 'BILL_AMT3': bill_amt3, 'BILL_AMT4': bill_amt4, 'BILL_AMT5': bill_amt5, 'BILL_AMT6': bill_amt6,
@@ -214,7 +214,7 @@ def main():
             prob_no_default, prob_default = probability[0], probability[1]
 
             st.markdown("---")
-            st.markdown("## 📊 PREDICTION RESULTS")
+            st.markdown("## PREDICTION RESULTS")
             col_g1, col_g2 = st.columns(2)
             with col_g1:
                 st.plotly_chart(create_gauge(prob_no_default, "No Default Risk", theme), use_container_width=True, config={"displayModeBar": False})
@@ -223,26 +223,26 @@ def main():
 
             st.markdown("---")
             if prediction == 0:
-                st.markdown(f"<div class='success-box'><h3>✓ APPROVED</h3><p>Low-risk customer profile</p><p><strong>Confidence:</strong> {prob_no_default*100:.1f}% | <strong>Risk:</strong> {'Low 🟢' if prob_default < 0.2 else 'Medium 🟡'}</p></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='success-box'><h3>APPROVED</h3><p>Low-risk customer profile</p><p><strong>Confidence:</strong> {prob_no_default*100:.1f}% | <strong>Risk:</strong> {'Low' if prob_default < 0.2 else 'Medium'}</p></div>", unsafe_allow_html=True)
             else:
-                st.markdown(f"<div class='danger-box'><h3>⚠ REVIEW REQUIRED</h3><p>High-risk customer profile</p><p><strong>Risk Level:</strong> {prob_default*100:.1f}% | <strong>Status:</strong> {'High 🟠' if prob_default < 0.6 else 'Critical 🔴'}</p></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='danger-box'><h3>REVIEW REQUIRED</h3><p>High-risk customer profile</p><p><strong>Risk Level:</strong> {prob_default*100:.1f}% | <strong>Status:</strong> {'High' if prob_default < 0.6 else 'Critical'}</p></div>", unsafe_allow_html=True)
 
-            st.markdown("### 📈 Key Metrics")
+            st.markdown("### Key Metrics")
             mc1, mc2, mc3 = st.columns(3)
             utilization = (bill_amt1 / limit_bal * 100) if limit_bal > 0 else 0
             payment_ratio = (pay_amt1 / bill_amt1 * 100) if bill_amt1 > 0 else 0
             times_delayed = sum([1 for p in pay_vals if p > 0])
             with mc1:
-                st.metric("Utilization", f"{utilization:.0f}%", delta="⚠ High" if utilization > 70 else "✓ Normal", delta_color="inverse" if utilization > 70 else "normal")
+                st.metric("Utilization", f"{utilization:.0f}%", delta="High" if utilization > 70 else "Normal", delta_color="inverse" if utilization > 70 else "normal")
             with mc2:
-                st.metric("Payment Ratio", f"{payment_ratio:.0f}%", delta="⚠ Low" if payment_ratio < 30 else "✓ Good", delta_color="inverse" if payment_ratio < 30 else "normal")
+                st.metric("Payment Ratio", f"{payment_ratio:.0f}%", delta="Low" if payment_ratio < 30 else "Good", delta_color="inverse" if payment_ratio < 30 else "normal")
             with mc3:
-                st.metric("Late Payments", f"{times_delayed}x", delta="⚠ High" if times_delayed > 2 else "✓ Low", delta_color="inverse" if times_delayed > 2 else "normal")
+                st.metric("Late Payments", f"{times_delayed}x", delta="High" if times_delayed > 2 else "Low", delta_color="inverse" if times_delayed > 2 else "normal")
 
     with tab2:
         st.markdown("### Pre-Built Scenarios")
-        demo_type = st.radio("Select Profile", ["✓ Good Customer", "⚠ Risk Customer"], horizontal=True)
-        if demo_type == "✓ Good Customer":
+        demo_type = st.radio("Select Profile", ["Good Customer", "Risk Customer"], horizontal=True)
+        if demo_type == "Good Customer":
             demo = {'LIMIT_BAL': 200000, 'SEX': 1, 'EDUCATION': 1, 'MARRIAGE': 1, 'AGE': 35,
                     'PAY_0': -1, 'PAY_2': -1, 'PAY_3': -1, 'PAY_4': -1, 'PAY_5': -1, 'PAY_6': -1,
                     'BILL_AMT1': 50000, 'BILL_AMT2': 48000, 'BILL_AMT3': 47000, 'BILL_AMT4': 45000, 'BILL_AMT5': 43000, 'BILL_AMT6': 42000,
@@ -273,10 +273,10 @@ def main():
         ### Risk Interpretation
         | Probability | Action |
         |---|---|
-        | > 80% | ✓ Strong Approve |
-        | 60-80% | ✓ Approve |
-        | 40-60% | ⚠ Review |
-        | < 40% | ✗ Decline |
+        | > 80% | Strong Approve |
+        | 60-80% | Approve |
+        | 40-60% | Review |
+        | < 40% | Decline |
         """)
 
 if __name__ == "__main__":
