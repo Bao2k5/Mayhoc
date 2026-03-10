@@ -73,6 +73,55 @@ Dataset **"Default of Credit Card Clients"** từ UCI Machine Learning Repositor
 - Dữ liệu từ **tháng 4/2005 đến tháng 9/2005**
 - **Tỷ lệ imbalance**: 77.88% không vỡ nợ, 22.12% vỡ nợ
 
+### ⬇️ Hướng dẫn tải dữ liệu (QUAN TRỌNG)
+
+**Bước 1: Tạo thư mục**
+```powershell
+mkdir data/raw -Force
+```
+
+**Bước 2: Tải dataset từ Kaggle**
+
+**Cách A: Sử dụng Kaggle API (Tự động - Khuyến nghị)**
+
+```powershell
+# Cài Kaggle CLI
+pip install kaggle
+
+# Setup Kaggle API:
+# 1. Truy cập: https://www.kaggle.com/settings/account
+# 2. Click "Create New API Token"
+# 3. File kaggle.json sẽ được tải về
+# 4. Di chuyển kaggle.json vào: C:\Users\<username>\.kaggle\
+
+# Download dataset
+kaggle datasets download -d uciml/default-of-credit-card-clients-dataset
+
+# Giải nén
+Expand-Archive default-of-credit-card-clients-dataset.zip -DestinationPath data/raw/
+```
+
+**Cách B: Tải thủ công (Nếu không có Kaggle API)**
+
+1. Truy cập: https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
+2. Click nút **"Download"** (bạn cần đăng nhập Kaggle)
+3. Giải nén tệp zip
+4. Di chuyển file `UCI_Credit_Card.csv` vào thư mục `data/raw/`
+
+**Bước 3: Kiểm tra**
+
+File cuối cùng phải nằm tại: `data/raw/UCI_Credit_Card.csv` (~2.2 MB)
+
+```powershell
+# Kiểm tra file tồn tại
+Test-Path "data/raw/UCI_Credit_Card.csv"  # Phải trả về True
+
+# Kiểm tra kích thước
+(Get-Item "data/raw/UCI_Credit_Card.csv").length / 1MB  # Phải khoảng 2.2 MB
+```
+
+✅ Sau khi có file, bạn có thể chạy các notebooks!
+
 ### Kích thước dữ liệu qua các giai đoạn
 
 | Giai đoạn | Số mẫu | Số features | Kích thước |
